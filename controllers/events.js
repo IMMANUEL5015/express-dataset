@@ -30,9 +30,38 @@ var addEvent = async (req, res, next) => {
 	try {
 		const { id, type, actor, repo, created_at } = req.body;
 		const data = { id, type, actor, repo, created_at };
+		const { db } = require('../controllers/actors');
 
 		database.findOne({ id }, function (err, doc) {
 			if (err) return res.status(500).json({ status: 'error', message: err.message });
+
+			db.findOne({ id: actor.id }, (error, theActor) => {
+				if (error) return res.status(500).json({ status: 'error', message: error.message });
+
+				if (!theActor) {
+					const obj = {};
+
+					obj.id = actor.id;
+					obj.login = actor.login;
+					obj.avatar_url = actor.avatar_url;
+					obj.num_of_associated_events = 1;
+					obj.timestamp_of_latest_event = new Date(created_at).getTime();
+
+					db.insert(obj);
+				} else {
+					db.update(
+						{ id: Number(actor.id) },
+						{
+							$set:
+							{
+								num_of_associated_events: theActor.num_of_associated_events + 1,
+								timestamp_of_latest_event: new Date(created_at).getTime()
+							}
+						},
+						{}
+					)
+				}
+			});
 
 			if (!doc) {
 				database.insert(data);
@@ -75,6 +104,9 @@ var eraseEvents = async (req, res, next) => {
 	try {
 		database.remove({}, { multi: true }, function (err, numRemoved) {
 			if (err) return res.status(500).json({ status: 'error', message: err.message });
+
+			const { db } = require('../controllers/actors');
+			db.remove({}, { multi: true });
 
 			return res.status(200).send();
 		});
