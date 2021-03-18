@@ -13,10 +13,7 @@ const sortEvents = (query, res) => {
 	return query.sort({ id: 1 }).exec(function (err, docs) {
 		if (err) return res.status(500).json({ status: 'error', message: err.message });
 
-		return res.status(200).json({
-			status: 'success',
-			events: docs
-		});
+		return res.status(200).json(docs);
 	})
 }
 
@@ -39,10 +36,7 @@ var addEvent = async (req, res, next) => {
 
 			if (!doc) {
 				database.insert(data);
-				return res.status(201).json({
-					status: 'success',
-					message: 'created'
-				});
+				return res.status(201).send();
 			}
 
 			return errorResponse(res, 400, 'Every event must have a unique id.');
@@ -82,9 +76,7 @@ var eraseEvents = async (req, res, next) => {
 		database.remove({}, { multi: true }, function (err, numRemoved) {
 			if (err) return res.status(500).json({ status: 'error', message: err.message });
 
-			return res.status(200).json({
-				status: 'success'
-			});
+			return res.status(200).send();
 		});
 	} catch (error) {
 		console.error(error);

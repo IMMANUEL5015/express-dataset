@@ -34,10 +34,7 @@ var updateActor = async (req, res, next) => {
 				{ multi: true },
 				function (err, numReplaced) {
 					if (err) return res.status(500).json({ status: 'error', message: err.message });
-					return res.status(200).json({
-						status: 'Success',
-						message: 'Updated'
-					});
+					return res.status(200).send();
 				});
 		});
 	} catch (error) {
