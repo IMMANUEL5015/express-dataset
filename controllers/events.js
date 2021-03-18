@@ -9,16 +9,20 @@ const errorResponse = (res, statusCode, message) => {
 	});
 }
 
+const sortEvents = (query, res) => {
+	return query.sort({ id: 1 }).exec(function (err, docs) {
+		if (err) return res.status(500).json({ status: 'error', message: err.message });
+
+		return res.status(200).json({
+			status: 'success',
+			events: docs
+		});
+	})
+}
+
 var getAllEvents = async (req, res, next) => {
 	try {
-		database.find({}).sort({ id: 1 }).exec(function (err, docs) {
-			if (err) return res.status(500).json({ status: 'error', message: err.message });
-
-			return res.status(200).json({
-				status: 'success',
-				events: docs
-			});
-		})
+		return sortEvents(database.find({}), res);
 	} catch (error) {
 		console.error(error);
 		return res.status(500).json({ status: 'error', message: error.message });
@@ -52,8 +56,24 @@ var addEvent = async (req, res, next) => {
 };
 
 
-var getByActor = () => {
+var getByActor = async (req, res, next) => {
+	try {
+		const actorId = req.params.actorID;
 
+		database.findOne({ 'actor.id': Number(actorId) }, function (err, doc) {
+			if (err) return res.status(500).json({ status: 'error', message: err.message });
+
+			if (!doc) {
+				return errorResponse(res, 404, 'The actor does not exist.');
+			}
+
+			return sortEvents(database.find({ 'actor.id': Number(actorId) }), res);
+		});
+
+	} catch (error) {
+		console.error(error);
+		return res.status(500).json({ status: 'error', message: error.message });
+	}
 };
 
 
