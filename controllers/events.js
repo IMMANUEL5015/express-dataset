@@ -88,7 +88,6 @@ var eraseEvents = async (req, res, next) => {
 		});
 	} catch (error) {
 		console.error(error);
-		console.error(error);
 		return res.status(500).json({ status: 'error', message: error.message });
 	}
 };
@@ -97,7 +96,8 @@ module.exports = {
 	getAllEvents: getAllEvents,
 	addEvent: addEvent,
 	getByActor: getByActor,
-	eraseEvents: eraseEvents
+	eraseEvents: eraseEvents,
+	database: database
 };
 
 
