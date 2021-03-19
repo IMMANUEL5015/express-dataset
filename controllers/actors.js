@@ -25,6 +25,28 @@ const sortEvents = (query, res) => {
 		})
 }
 
+const sortByStreak = (query, res) => {
+	return query.sort({ maximum_streak: -1, timestamp_of_latest_event: -1, login: 1 })
+		.exec(function (err, docs) {
+			if (err) return res.status(500).json({ status: 'error', message: err.message });
+
+			let actors = [];
+
+			for (let i = 0; i < docs.length; i++) {
+				const doc = docs[i];
+				const obj = {};
+
+				obj.id = doc.id;
+				obj.login = doc.login;
+				obj.avatar_url = doc.avatar_url;
+
+				actors.push(obj);
+			}
+
+			return res.status(200).json(actors);
+		})
+}
+
 const errorResponse = (res, statusCode, message) => {
 	return res.status(statusCode).json({
 		status: 'error',
@@ -70,7 +92,7 @@ var updateActor = async (req, res, next) => {
 				{ multi: true },
 				function (err, numReplaced) {
 					if (err) return res.status(500).json({ status: 'error', message: err.message });
-					return res.status(200).send();
+					return res.status(200).json({});
 				});
 		});
 	} catch (error) {
@@ -79,8 +101,13 @@ var updateActor = async (req, res, next) => {
 	}
 };
 
-var getStreak = () => {
-
+var getStreak = async (req, res, next) => {
+	try {
+		return sortByStreak(db.find({}), res);
+	} catch (error) {
+		console.error(error);
+		return res.status(500).json({ status: 'error', message: error.message });
+	}
 };
 
 

@@ -13,7 +13,17 @@ const sortEvents = (query, res) => {
 	return query.sort({ id: 1 }).exec(function (err, docs) {
 		if (err) return res.status(500).json({ status: 'error', message: err.message });
 
-		return res.status(200).json(docs);
+		const documents = [];
+
+		for (let i = 0; i < docs.length; i++) {
+			const doc = docs[i];
+			const obj = doc;
+			delete obj._id;
+
+			documents.push(obj);
+		}
+
+		return res.status(200).json(documents);
 	})
 }
 
@@ -47,28 +57,60 @@ var addEvent = async (req, res, next) => {
 					obj.num_of_associated_events = 1;
 					obj.timestamp_of_latest_event = new Date(created_at).getTime();
 
-					db.insert(obj);
-				} else {
-					db.update(
-						{ id: Number(actor.id) },
-						{
-							$set:
-							{
-								num_of_associated_events: theActor.num_of_associated_events + 1,
-								timestamp_of_latest_event: new Date(created_at).getTime()
+					let maximum_streak = 1;
+
+					database.find({ 'actor.id': Number(actor.id), created_at }, function (err, theDocs) {
+						db.findOne({ id: Number(actor.id) }, function (err, theDoc) {
+							if (theDocs && theDoc && theDoc.maximum_streak > theDocs.length + 1) {
+								maximum_streak = theDoc.maximum_streak;
+							} else if (theDocs && theDoc && theDoc.maximum_streak < theDocs.length + 1) {
+								maximum_streak = theDocs.length + 1;
 							}
-						},
-						{}
-					)
+							obj.maximum_streak = maximum_streak;
+							db.insert(obj);
+
+							if (!doc) {
+								database.insert(data);
+								return res.status(201).json({});
+							} else {
+								return errorResponse(res, 400, 'Every event must have a unique id.');
+							}
+						})
+					});
+				} else {
+					let maximum_streak = 1;
+
+					database.find({ 'actor.id': Number(actor.id), created_at }, function (err, theDocs) {
+						db.findOne({ id: Number(actor.id) }, function (err, theDoc) {
+							if (theDocs && theDoc && theDoc.maximum_streak > theDocs.length + 1) {
+								maximum_streak = theDoc.maximum_streak;
+							} else if (theDocs && theDoc && theDoc.maximum_streak < theDocs.length + 1) {
+								maximum_streak = theDocs.length + 1;
+							}
+
+							db.update(
+								{ id: Number(actor.id) },
+								{
+									$set:
+									{
+										num_of_associated_events: theActor.num_of_associated_events + 1,
+										timestamp_of_latest_event: new Date(created_at).getTime(),
+										maximum_streak
+									}
+								},
+								{}
+							)
+
+							if (!doc) {
+								database.insert(data);
+								return res.status(201).json({});
+							} else {
+								return errorResponse(res, 400, 'Every event must have a unique id.');
+							}
+						})
+					});
 				}
 			});
-
-			if (!doc) {
-				database.insert(data);
-				return res.status(201).send();
-			}
-
-			return errorResponse(res, 400, 'Every event must have a unique id.');
 		});
 
 
@@ -108,7 +150,7 @@ var eraseEvents = async (req, res, next) => {
 			const { db } = require('../controllers/actors');
 			db.remove({}, { multi: true });
 
-			return res.status(200).send();
+			return res.status(200).json({});
 		});
 	} catch (error) {
 		console.error(error);
@@ -123,20 +165,3 @@ module.exports = {
 	eraseEvents: eraseEvents,
 	database: database
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
